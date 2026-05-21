@@ -5,6 +5,10 @@
 
 extern char _heap_max;
 extern char _heap_start;
+
 void *kmalloc(size_t size);
+void *allocate_page(uint64_t* bitmap, size_t size);
+void free_bit(uint8_t* bitmap, uintptr_t addr);
+void flip_bit(uint8_t* bitmap, uintptr_t free_start, uintptr_t free_end);
 
 #endif
