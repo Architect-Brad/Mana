@@ -6,6 +6,7 @@
 #include "kmalloc.h"
 #include "minix.h"
 #include "mmu.h"
+#include "ramfb.h"
 #include "timer.h"
 #include "uart.h"
 #include <stdarg.h>
@@ -14,6 +15,7 @@
 #define BITMAP_WORDS 1024
 uint64_t pmm_bitmap[BITMAP_WORDS] = {0};
 struct inode root;
+extern void start_raytracer(void);
 
 void cmd_mkfs() {
 
@@ -60,13 +62,7 @@ void cmd_alloc_inode() {
     uart_puts("IT works we allocated a inode");
   }
 }
-void exception_svc(void) {
-  /*
-  Supervisor call to allow application code to call the OS.
-          It generates an exception targeting exception level 1 (EL1).
-  */
-  asm("svc #0xdead");
-}
+void exception_svc(void) { asm("svc #0xdead"); }
 
 void exception_svc_test(void) {
   uart_puts("exception_svc_test... start\n");
@@ -80,18 +76,22 @@ void exception_svc_test(void) {
 void kmain(void) {
   uart_puts("--- MANA OS ---\n");
 
+  // Add this:
   extern void vectors(void);
   raw_write_vbar_el1((uint64_t)vectors);
   uart_puts("Vector table loaded into VBAR_EL1.\n");
+  // exception_svc_test();
+  // timer_test();
 
-  timer_test();
-
+  // After MMU and UART init:
+  init_mmu(pmm_bitmap);
+  ramfb_init();
+  // ramfb_test_pattern();
   char cmd[256];
   while (1) {
     uart_puts("> ");
     read_line(cmd, sizeof(cmd));
 
-    // ── echo (with optional redirection) ────────
     if (strncmp(cmd, "echo ", 5) == 0) {
       char *gt = strchr(cmd, '>');
       if (gt) {
@@ -106,39 +106,25 @@ void kmain(void) {
       } else {
         cmd_echo(cmd);
       }
-    }
-    // ── ls ──────────────────────────────────────
-    else if (strcmp(cmd, "ls") == 0) {
+    } else if (strcmp(cmd, "ls") == 0) {
       cmd_ls();
-    }
-    // ── create -f <name> ────────────────────────
-    else if (strncmp(cmd, "create -f ", 10) == 0) {
+    } else if (strncmp(cmd, "create -f ", 10) == 0) {
       cmd_create_f(cmd + 10);
-    }
-    // ── create -d <name> ────────────────────────
-    else if (strncmp(cmd, "create -d ", 10) == 0) {
+    } else if (strncmp(cmd, "create -d ", 10) == 0) {
       cmd_create_d(cmd + 10);
-    }
-    // ── show <name> ─────────────────────────────
-    else if (strncmp(cmd, "show ", 5) == 0) {
+    } else if (strncmp(cmd, "show ", 5) == 0) {
       cmd_show(cmd + 5);
-    }
-    // ── cd <dir> ────────────────────────────────
-    else if (strncmp(cmd, "cd ", 3) == 0) {
+    } else if (strncmp(cmd, "cd ", 3) == 0) {
       char *dir = cmd + 3;
       while (*dir == ' ')
         dir++;
       cmd_cd(dir);
-    }
-    // ── rm <name> ───────────────────────────────
-    else if (strncmp(cmd, "rm ", 3) == 0) {
+    } else if (strncmp(cmd, "rm ", 3) == 0) {
       char *name = cmd + 3;
       while (*name == ' ')
         name++;
       cmd_rm(name);
-    }
-    // ── mv <src> <dst> ──────────────────────────
-    else if (strncmp(cmd, "mv ", 3) == 0) {
+    } else if (strncmp(cmd, "mv ", 3) == 0) {
       char *src, *dst;
       if (parse_two_args(cmd + 3, &src, &dst))
         cmd_mv(src, dst);
@@ -146,22 +132,18 @@ void kmain(void) {
         uart_puts("Usage: mv <src> <dst>\n");
     }
 
-    // ── mkfs ────────────────────────────────────
     else if (strcmp(cmd, "mkfs") == 0) {
       cmd_mkfs();
-    }
-    // ── hello ───────────────────────────────────
-    else if (strcmp(cmd, "hello") == 0) {
+    } else if (strcmp(cmd, "hello") == 0) {
       uart_puts("Hello, OS!\n");
-    }
-    // ── debug / test commands ──────────────────
-    else if (strcmp(cmd, "alloc_inode") == 0) {
+    } else if (strcmp(cmd, "render") == 0) {
+      start_raytracer();
+    } else if (strcmp(cmd, "alloc_inode") == 0) {
       cmd_alloc_inode();
     } else if (strcmp(cmd, "test_inode") == 0) {
       test_inode();
     }
 
-    // ── empty input? ────────────────────────────
     else if (cmd[0] != '\0') {
       uart_puts("Unknown command.\n");
     }

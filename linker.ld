@@ -26,11 +26,18 @@ SECTIONS
     _edata = .;
   } > RAM
 
-  .bss :
+.bss :
   {
+    . = ALIGN(16);
+    _sbss = .;              /* Start of BSS bound */
     *(.bss*)
+    *(COMMON)
+    . = ALIGN(16);
+    _ebss = .;              /* End of BSS bound */
   } > RAM
+
   . = ALIGN(4096);
   _heap_start = .;
+  /* Note: Setting heap max exactly to the end of RAM leaves no room for a downward-growing stack. */
   _heap_max = 0x40000000 + 0x10000000;
 }

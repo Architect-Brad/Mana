@@ -1,7 +1,6 @@
 #include "uart.h"
 #include <stdint.h>
 
-// Dedicated stack for IRQ handler (used by vectors.S)
 uint8_t irq_stack[4096] __attribute__((aligned(16)));
 
 void irq_handler_c(void) {
@@ -10,7 +9,7 @@ void irq_handler_c(void) {
   uint32_t irq_id = iar & 0x3FF;
 
   if (irq_id == 1022 || irq_id == 1023) {
-    gicc[4] = iar; // EOI
+    gicc[4] = iar;
     return;
   }
 
@@ -23,5 +22,5 @@ void irq_handler_c(void) {
     asm volatile("msr cntp_ctl_el0, %0" ::"r"(1));
   }
 
-  gicc[4] = iar; // EOI
+  gicc[4] = iar;
 }

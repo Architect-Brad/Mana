@@ -11,11 +11,9 @@ void handle_exception(exception_frame *exc) {
   uart_printf("An exception occur:\n");
   uart_printf("exc_type: 0x%x\n", exc->exc_type);
 
-  // Group system registers
   uart_printf("ESR: 0x%x  SP: 0x%x  ELR: 0x%x  SPSR: 0x%x\n", exc->exc_esr,
               exc->exc_sp, exc->exc_elr, exc->exc_spsr);
 
-  // Group general purpose registers (4 per line)
   uart_printf(" x0: 0x%x   x1: 0x%x   x2: 0x%x   x3: 0x%x\n", exc->x0, exc->x1,
               exc->x2, exc->x3);
   uart_printf(" x4: 0x%x   x5: 0x%x   x6: 0x%x   x7: 0x%x\n", exc->x4, exc->x5,
@@ -57,7 +55,6 @@ restore_irq_out:
   psw_restore_interrupt(&psw);
 }
 
-// ARM64 Exception Class for a 64-bit SVC call
 #define ESR_EC_SVC64 0x15
 
 void common_trap_handler(struct _exception_frame *exc) {

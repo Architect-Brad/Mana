@@ -51,11 +51,24 @@ void *allocate_page(uint64_t *bitmap, size_t total_words) {
   return NULL;
 }
 
-// Simple memset for a freestanding kernel
 void *memset(void *s, int c, size_t n) {
   uint8_t *p = s;
   while (n--) {
     *p++ = (uint8_t)c;
   }
   return s;
+}
+
+void clean_cache_provider(void *address, size_t size) {
+  uintptr_t start = (uintptr_t)address;
+  uintptr_t end = start + size;
+
+  start &= ~0x3F;
+
+  while (start < end) {
+    asm volatile("dc cvac, %0" ::"r"(start));
+    start += 64; // Move to next cache line
+  }
+
+  asm volatile("dsb sy");
 }

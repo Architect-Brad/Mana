@@ -11,4 +11,5 @@ void *allocate_page(uint64_t *bitmap, size_t size);
 void free_bit(uint8_t *bitmap, uintptr_t addr);
 void flip_bit(uint8_t *bitmap, uintptr_t free_start, uintptr_t free_end);
 void *memset(void *s, int c, size_t n);
+void clean_cache_provider(void *address, size_t size);
 #endif

@@ -1,17 +1,24 @@
 .section .text
 .global _start
 _start:
+    ldr x0, =stack_top
+    mov sp, x0
 
-ldr x0, =stack_top
-mov sp, x0
-
-bl kmain
+    bl kmain
 
 hang:
-        b hang
+    b hang
+
+.global enable_fpu
+.type enable_fpu, %function
+enable_fpu:
+    mov x0, #(3 << 20)
+    msr cpacr_el1, x0
+    isb
+    ret
 
 .section .bss
 .align 16
 stack_bottom:
-        .space 4096
+    .space 65536
 stack_top:
