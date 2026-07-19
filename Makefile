@@ -56,9 +56,14 @@ DOOM_ENGINE_OBJS   = $(DOOM_ENGINE_SRCS:$(DOOM_ENGINE_DIR)/%.c=$(BUILDDIR)/doom/
 DOOM_PLATFORM_OBJS = $(DOOM_PLATFORM_SRCS:$(DOOM_PLATFORM)/%.c=$(BUILDDIR)/doom/%.o)
 DOOM_OBJS          = $(DOOM_PLATFORM_OBJS) $(DOOM_ENGINE_OBJS)
 
-# gnu89: vanilla Doom uses pre-C99 implicit-int style
-DOOM_CFLAGS = $(COMMON_FLAGS) -O2 -std=gnu89 -fno-strict-aliasing \
+# Engine: gnu89 (vanilla Doom). Platform: gnu11 (Mana i_*.c uses C99 loops).
+DOOM_ENGINE_CFLAGS = $(COMMON_FLAGS) -O2 -std=gnu89 -fno-strict-aliasing \
 	-Wno-unused -Wno-implicit-int -Wno-return-type \
+	-Idoom -Idoom/compat -I$(DOOM_ENGINE_DIR) \
+	-Isrc/kernel -Isrc/mm -Isrc/fs -Isrc/drivers -Isrc/lib \
+	-DMANA_DOOM_ENABLED -DNORMALUNIX
+DOOM_PLATFORM_CFLAGS = $(COMMON_FLAGS) -O2 -std=gnu11 -fno-strict-aliasing \
+	-Wno-unused \
 	-Idoom -Idoom/compat -I$(DOOM_ENGINE_DIR) \
 	-Isrc/kernel -Isrc/mm -Isrc/fs -Isrc/drivers -Isrc/lib \
 	-DMANA_DOOM_ENABLED -DNORMALUNIX
@@ -92,15 +97,15 @@ $(BUILDDIR)/%.o: $(SRCDIR)/%.S
 
 $(BUILDDIR)/doom/%.o: $(DOOM_PLATFORM)/%.c
 	@mkdir -p $(dir $@)
-	$(CC) $(DOOM_CFLAGS) -c $< -o $@
+	$(CC) $(DOOM_PLATFORM_CFLAGS) -c $< -o $@
 
 $(BUILDDIR)/doom/compat/%.o: $(DOOM_PLATFORM)/compat/%.c
 	@mkdir -p $(dir $@)
-	$(CC) $(DOOM_CFLAGS) -c $< -o $@
+	$(CC) $(DOOM_PLATFORM_CFLAGS) -c $< -o $@
 
 $(BUILDDIR)/doom/engine/%.o: $(DOOM_ENGINE_DIR)/%.c
 	@mkdir -p $(dir $@)
-	$(CC) $(DOOM_CFLAGS) -c $< -o $@
+	$(CC) $(DOOM_ENGINE_CFLAGS) -c $< -o $@
 
 kernel.elf: $(OBJS)
 	$(LD) -T linker.ld $(OBJS) -o $@
@@ -147,16 +152,17 @@ run: kernel.elf
 	  -device ramfb \
 	  -serial stdio
 
-# Full virtio + keyboard + optional block
+# Full virtio + keyboard + optional block (modern virtio-mmio)
 run-virtio: kernel.elf
 	qemu-system-aarch64 \
 	  -machine virt,gic-version=2 \
 	  -cpu cortex-a57 \
 	  -m 256M \
 	  -kernel kernel.elf \
+	  -global virtio-mmio.force-legacy=false \
 	  -device ramfb \
 	  -device virtio-keyboard-device \
-	  -drive if=none,id=vd0,file=disk.img,format=raw \
+	  -drive if=none,id=vd0,file=$(DISK_IMG),format=raw \
 	  -device virtio-blk-device,drive=vd0 \
 	  -serial stdio
 

@@ -73,6 +73,24 @@ Things it currently does, which it probably shouldn't:
 
 ---
 
+## Releases
+
+Prebuilt **`kernel.elf`** images (Doom + packed free IWAD when available) ship on
+[GitHub Releases](https://github.com/Architect-Brad/Mana/releases).
+
+```bash
+# Download kernel.elf from the latest release, then:
+qemu-system-aarch64 \
+  -machine virt,gic-version=2 -cpu cortex-a57 -m 256M \
+  -kernel kernel.elf -nographic
+# At the shell: doom
+```
+
+Source clones stay lean: build products and WAD files are **not** in git.
+See [`assets/README.md`](assets/README.md) for obtaining an IWAD when building from source.
+
+---
+
 ## Building
 
 ### Prerequisites
