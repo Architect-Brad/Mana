@@ -11,6 +11,7 @@ kernel_nodisk.elf
 
 # Build tree and packed disk
 build/
+dist/
 disk.img
 
 # Game data (obtain Freedoom / shareware separately; pack with tools/pack_wad.py)
