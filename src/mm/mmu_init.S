@@ -16,11 +16,10 @@ enable_mmu:
     ORR x3, x3, #1
     ORR x3, x3, #(1 << 2)
     ORR x3, x3, #(1 << 12)
-    MSR SCTLR_EL1, x3        // ← THIS LINE MUST USE x3
+    MSR SCTLR_EL1, x3
 
     DSB SY
     ISB
-
     DSB SY
     TLBI VMALLE1
     DSB SY

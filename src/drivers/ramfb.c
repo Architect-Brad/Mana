@@ -1,10 +1,33 @@
+/* ─────────────────────────────────────────────────────────────────────────
+ * ramfb.c — QEMU RAMFB driver via fw_cfg DMA
+ *
+ * RAMFB is a QEMU paravirtual framebuffer. Instead of emulating a GPU
+ * (which would require a PCI bus, a driver model, and our last shred of
+ * sanity), QEMU lets you negotiate a display surface by writing a DMA
+ * descriptor into its fw_cfg interface.
+ *
+ * The protocol:
+ *   1. Tell QEMU: "here is a buffer in RAM, please show it on screen"
+ *   2. Write pixels into that buffer
+ *   3. QEMU renders them, no GPU required
+ *
+ * This driver handles step 1. The rest of the kernel handles step 2.
+ * QEMU handles step 3 without complaining, which is more than we can
+ * say for actual GPU drivers.
+ *
+ * Resolution: 1080×720, format: XRGB8888 (32bpp)
+ * The X in XRGB means the alpha byte is ignored. QEMU doesn't do
+ * transparency. Neither does this kernel.
+ * ───────────────────────────────────────────────────────────────────────── */
+
 #include <stdint.h>
 
-// Assuming these are provided by your uart.h / console header
 extern void uart_puts(const char *s);
 extern void uart_printf(const char *fmt, ...);
 
-// --- QEMU fw_cfg MMIO Registers (ARM64 Virt Machine Address Map) ---
+/* QEMU fw_cfg MMIO base — hardcoded for the AArch64 virt machine.
+ * If you're running on real hardware, this address is wrong and
+ * you have bigger problems than the framebuffer. */
 #define FW_CFG_BASE 0x09020000
 #define FW_CFG_REG_DATA (FW_CFG_BASE + 0) // 8-bit / string data access
 #define FW_CFG_REG_SEL (FW_CFG_BASE + 8)  // 16-bit selector write

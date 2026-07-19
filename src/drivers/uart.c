@@ -1,4 +1,5 @@
 #include "uart.h"
+#include <stdarg.h>
 #include <stdint.h>
 
 void uart_putc(char a) { *UART_PTR = a; }
@@ -54,16 +55,17 @@ void uart_printf(char *string, ...) {
   for (int i = 0; string[i] != '\0'; i++) {
     if (string[i] == '%') {
       i++;
-      if (string[i] == 'd') {
+      if (string[i] == 'd' || string[i] == 'u') {
         int num_arg = va_arg(args, int);
         uart_putd(num_arg);
       } else if (string[i] == 's') {
         char *char_arg = va_arg(args, char *);
-        uart_puts(char_arg);
+        uart_puts(char_arg ? char_arg : "(null)");
       } else if (string[i] == 'x') {
-        // Extract the argument as a 64-bit unsigned int
         unsigned long long hex_arg = va_arg(args, unsigned long long);
         uart_puthex64(hex_arg);
+      } else if (string[i] == '%') {
+        uart_putc('%');
       }
     } else {
       uart_putc(string[i]);
@@ -73,13 +75,8 @@ void uart_printf(char *string, ...) {
   va_end(args);
 }
 
-size_t strlen(const char *s) {
-  size_t n = 0;
-  while (s[n] != '\0') {
-    n++;
-  }
-  return n;
-}
+/* strlen/strcmp/strncmp/strchr live in libc.c */
+
 // uart_getchar: poll the UART until a character arrives
 char uart_getchar(void) {
   volatile uint32_t *dr = (uint32_t *)(UART_BASE + 0x00); // DR
@@ -118,32 +115,6 @@ void read_line(char *buf, int size) {
   }
 
   buf[i] = '\0';
-}
-
-int strcmp(const char *a, const char *b) {
-  while (*a && *a == *b) {
-    a++;
-    b++;
-  }
-  return *(unsigned char *)a - *(unsigned char *)b;
-}
-
-int strncmp(const char *a, const char *b, int n) {
-  while (n && *a && *a == *b) {
-    a++;
-    b++;
-    n--;
-  }
-  return (n == 0) ? 0 : *(unsigned char *)a - *(unsigned char *)b;
-}
-
-char *strchr(const char *s, int c) {
-  while (*s != '\0') {
-    if (*s == c)
-      return (char *)s;
-    s++;
-  }
-  return (c == '\0') ? (char *)s : NULL;
 }
 
 int parse_two_args(char *input, char **arg1, char **arg2) {

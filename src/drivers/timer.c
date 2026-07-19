@@ -27,13 +27,20 @@ void timer_test(void) {
   disable_cntv();
 
   cntfrq = raw_read_cntfrq_el0();
-  ticks = TIMER_WAIT * cntfrq;
+  /* Guard: some QEMU configs report 0 until first program */
+  if (cntfrq == 0)
+    cntfrq = 62500000; /* typical virt timer freq */
+
+  ticks = (uint64_t)TIMER_WAIT * (uint64_t)cntfrq;
 
   current_cnt = raw_read_cntvct_el0();
-
   raw_write_cntv_cval_el0(current_cnt + ticks);
 
   enable_cntv();
 
+  /* IRQs enabled after all drivers register their lines (see kmain). */
+}
+
+void timer_enable_irq(void) {
   enable_irq();
 }

@@ -20,14 +20,20 @@ static void init_gicc(void) {
   /* Handle all of interrupts in a single group */
   *REG_GIC_GICC_BPR = GICC_BPR_NO_GROUP;
 
-  /* Clear all of the active interrupts */
-  for (pending_irq = (*REG_GIC_GICC_IAR & GICC_IAR_INTR_IDMASK);
-       (pending_irq != GICC_IAR_SPURIOUS_INTR);
-       pending_irq = (*REG_GIC_GICC_IAR & GICC_IAR_INTR_IDMASK))
-    *REG_GIC_GICC_EOIR = *REG_GIC_GICC_IAR;
+  /* Clear pending interrupts — cap iterations so a stuck IAR cannot hang boot */
+  {
+    int guard;
+    for (guard = 0; guard < 128; guard++) {
+      pending_irq = (*REG_GIC_GICC_IAR & GICC_IAR_INTR_IDMASK);
+      if (pending_irq == GICC_IAR_SPURIOUS_INTR)
+        break;
+      *REG_GIC_GICC_EOIR = pending_irq;
+    }
+  }
 
   /* Enable CPU interface */
   *REG_GIC_GICC_CTLR = GICC_CTLR_ENABLE;
+  uart_puts("init_gicc() done\n");
 }
 
 static void init_gicd(void) {

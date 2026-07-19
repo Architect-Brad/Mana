@@ -1,10 +1,26 @@
 # Object files
 *.o
+*.d
 
-# Executables/Binaries
+# Executables / images
 *.elf
 *.bin
 *.iso
+kernel.elf
+kernel_nodisk.elf
 
-# Dependency files
-*.d
+# Build tree and packed disk
+build/
+disk.img
+
+# Game data (obtain Freedoom / shareware separately; pack with tools/pack_wad.py)
+*.wad
+assets/*.wad
+
+# Editor / IDE
+compile_commands.json
+.vscode/
+.idea/
+*.swp
+*~
+.DS_Store

@@ -36,8 +36,12 @@ SECTIONS
     _ebss = .;              /* End of BSS bound */
   } > RAM
 
+  /* Stack at top of RAM; grows down. Heap ends below the stack. */
+  _stack_size = 0x100000; /* 1 MiB for Doom alloca + deep call chains */
+  stack_top = 0x40000000 + 0x10000000;
+  stack_bottom = stack_top - _stack_size;
+
   . = ALIGN(4096);
   _heap_start = .;
-  /* Note: Setting heap max exactly to the end of RAM leaves no room for a downward-growing stack. */
-  _heap_max = 0x40000000 + 0x10000000;
+  _heap_max = stack_bottom;
 }

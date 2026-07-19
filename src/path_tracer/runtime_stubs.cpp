@@ -3,12 +3,16 @@
 
 extern "C" {
 void *kmalloc(size_t size);
+void  kfree(void *ptr);
 
-float tanf(float x) {
-  float x2 = x * x;
-  return x * (1.0f +
-              x2 * (1.0f / 3.0f + x2 * (2.0f / 15.0f + x2 * (17.0f / 315.0f) +
-                                        x2 * (62.0f / 2835.0f))));
+/* tanf provided by libc.c */
+
+void enable_fpu(void) {
+  /* CPACR_EL1: enable FP/ASIMD at EL0/EL1 (bits 21:20 = 0b11) */
+  uint64_t cpacr;
+  __asm__ __volatile__("mrs %0, cpacr_el1" : "=r"(cpacr));
+  cpacr |= (3ULL << 20);
+  __asm__ __volatile__("msr cpacr_el1, %0; isb" ::"r"(cpacr) : "memory");
 }
 
 void *__dso_handle = nullptr;
@@ -23,6 +27,7 @@ void clean_cache_provider(void *address, uint32_t size);
 
 void *operator new(size_t size) { return kmalloc(size); }
 void *operator new[](size_t size) { return kmalloc(size); }
-void operator delete(void *) noexcept {}
-void operator delete[](void *) noexcept {}
-void operator delete(void *, size_t) noexcept {}
+void operator delete(void *ptr) noexcept { kfree(ptr); }
+void operator delete[](void *ptr) noexcept { kfree(ptr); }
+void operator delete(void *ptr, size_t) noexcept { kfree(ptr); }
+void operator delete[](void *ptr, size_t) noexcept { kfree(ptr); }

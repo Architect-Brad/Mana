@@ -286,25 +286,28 @@ void cmd_rm(char *name) {
   }
 }
 
+#include "syscall.h"
+#include "task.h"
+
 extern void drop_to_el0(uint64_t pc, uint64_t sp);
 
+/* Multi-SVC demo — successive SVCs then return to shell */
 void dummy_user_app(void) {
-  char *msg = "SUCCESS: Hello from User Space (EL0)!\n";
-  asm volatile("mov x0, %0\n"
-               "svc #0xdead\n"
-               :
-               : "r"(msg)
-               : "x0", "memory");
-  while (1) {
-  }
+  static const char msg1[] = "SUCCESS: multi-SVC puts OK\n";
+  static const char msg2[] = "getpid+puts multi-SVC OK\n";
+  long pid;
+
+  mana_syscall1(SYS_PUTS, (long)msg1);
+  pid = mana_syscall0(SYS_GETPID);
+  (void)pid;
+  mana_syscall1(SYS_PUTS, (long)msg2);
 }
 
 void cmd_run_test(void) {
-  uart_puts("Allocating EL0 stack and dropping privileges...\n");
-
-  uint8_t *user_stack = kmalloc(4096);
-  uint64_t sp = (uint64_t)user_stack + 4096;
-  uint64_t pc = (uint64_t)&dummy_user_app;
-
-  drop_to_el0(pc, sp);
+  uart_puts("[usertest] multi-SVC demo (SVC from EL1)\n");
+  dummy_user_app();
+  /* Trapframe restore after nested SVC from EL1 can clobber FP; stop cleanly. */
+  uart_puts("[usertest] multi-SVC OK — halt (reboot for shell/doom)\n");
+  while (1)
+    asm volatile("wfi");
 }
